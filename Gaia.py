@@ -18,13 +18,13 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app with custom template folder
-template_dir = '/Users/avicomputer/Desktop/Start Ups/Gaia/Code/Gaia/templates'
+template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, 
            template_folder=template_dir,
            static_folder=os.path.join(os.path.dirname(template_dir), 'static'))
 
-# Update UPLOAD_FOLDER path to match the project structure
-UPLOAD_FOLDER = os.path.join(os.path.dirname(template_dir), 'static')
+# Update UPLOAD_FOLDER path
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
