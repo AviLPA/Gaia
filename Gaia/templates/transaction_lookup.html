@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transaction Lookup</title>
+    <style>
+        /* Similar styling as receipt_creator.html */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .transaction-details {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        .payment-info {
+            background: #f8f8f8;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Transaction Lookup</h1>
+        <div class="search-section">
+            <input type="text" id="transaction-id" placeholder="Enter Transaction ID">
+            <button onclick="lookupTransaction()">Search</button>
+        </div>
+        
+        <div id="transaction-details" class="transaction-details">
+            <!-- Transaction details will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        async function lookupTransaction() {
+            const transactionId = document.getElementById('transaction-id').value;
+            const detailsDiv = document.getElementById('transaction-details');
+            
+            try {
+                const response = await fetch(`/api/transaction/${transactionId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    detailsDiv.style.display = 'block';
+                    detailsDiv.innerHTML = `
+                        <h2>Transaction Details</h2>
+                        <p><strong>Transaction ID:</strong> ${data.transaction_id}</p>
+                        <p><strong>Date:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+                        <p><strong>Payment Method:</strong> ${data.payment_method}</p>
+                        
+                        <div class="payment-info">
+                            ${data.card_info.last_four ? 
+                                `<p><strong>Card ending in:</strong> ${data.card_info.last_four}</p>
+                                 <p><strong>Expiration:</strong> ${data.card_info.exp_date}</p>` 
+                                : ''}
+                        </div>
+                        
+                        <h3>Receipt Information</h3>
+                        <p><strong>Store:</strong> ${data.receipt.store}</p>
+                        <p><strong>Total:</strong> $${data.receipt.total.toFixed(2)}</p>
+                    `;
+                } else {
+                    detailsDiv.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                detailsDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 

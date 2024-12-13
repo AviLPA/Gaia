@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt Creator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .items-container {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .item input {
+            margin-bottom: 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .remove-item {
+            background: #ff4444;
+        }
+        .remove-item:hover {
+            background: #cc0000;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+        .qr-result {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            display: none;
+        }
+        .qr-result img {
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+        }
+        .receipt-id {
+            font-family: monospace;
+            font-size: 16px;
+            color: #666;
+            margin: 10px 0;
+        }
+        .payment-info {
+            margin-top: 10px;
+        }
+        
+        .payment-info select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        #card-details {
+            display: none;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        #card-details input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create Receipt</h1>
+        <form id="receipt-form">
+            <div class="form-group">
+                <label for="store">Store Name:</label>
+                <input type="text" id="store" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Items:</label>
+                <div id="items-container" class="items-container">
+                    <div class="item">
+                        <input type="text" placeholder="Item name" required>
+                        <input type="number" step="0.01" placeholder="Price" required>
+                        <button type="button" class="remove-item" onclick="removeItem(this)">×</button>
+                    </div>
+                </div>
+                <button type="button" onclick="addItem()">Add Item</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Payment Information:</label>
+                <div class="payment-info">
+                    <select id="payment-method" required>
+                        <option value="">Select Payment Method</option>
+                        <option value="credit">Credit Card</option>
+                        <option value="debit">Debit Card</option>
+                        <option value="cash">Cash</option>
+                    </select>
+                    
+                    <div id="card-details" style="display: none;">
+                        <input type="text" id="card-number" placeholder="Card Number">
+                        <input type="text" id="card-exp" placeholder="MM/YY" pattern="[0-9]{2}/[0-9]{2}">
+                        <input type="text" id="card-cvv" placeholder="CVV" pattern="[0-9]{3,4}">
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit">Create Receipt</button>
+        </form>
+        
+        <div id="response"></div>
+        <div id="qr-result" class="qr-result">
+            <h3>Receipt Created!</h3>
+            <div class="receipt-id"></div>
+            <p>Scan this QR code to view the receipt:</p>
+            <img id="qr-image" src="" alt="Receipt QR Code">
+        </div>
+    </div>
+
+    <script>
+        function addItem() {
+            const container = document.getElementById('items-container');
+            const newItem = document.createElement('div');
+            newItem.className = 'item';
+            newItem.innerHTML = `
+                <input type="text" placeholder="Item name" required>
+                <input type="number" step="0.01" placeholder="Price" required>
+                <button type="button" class="remove-item" onclick="removeItem(this)">×</button>
+            `;
+            container.appendChild(newItem);
+        }
+
+        function removeItem(button) {
+            const itemsContainer = document.getElementById('items-container');
+            if (itemsContainer.children.length > 1) {
+                button.parentElement.remove();
+            }
+        }
+
+        function calculateTotal(items) {
+            return items.reduce((sum, item) => sum + item.price, 0);
+        }
+
+        document.getElementById('receipt-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const itemElements = document.querySelectorAll('.item');
+            const items = Array.from(itemElements).map(item => ({
+                name: item.children[0].value,
+                price: parseFloat(item.children[1].value)
+            }));
+
+            // Get payment information
+            const paymentData = {
+                payment_method: document.getElementById('payment-method').value,
+                card_number: document.getElementById('card-number')?.value,
+                card_exp: document.getElementById('card-exp')?.value,
+                card_cvv: document.getElementById('card-cvv')?.value
+            };
+
+            const receiptData = {
+                store: document.getElementById('store').value,
+                date: document.getElementById('date').value,
+                items: items,
+                total: calculateTotal(items),
+                payment: paymentData  // Include payment data
+            };
+
+            try {
+                const response = await fetch(`${window.location.origin}/receipt`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(receiptData)
+                });
+
+                const data = await response.json();
+                const responseDiv = document.getElementById('response');
+                const qrResult = document.getElementById('qr-result');
+                
+                if (response.ok) {
+                    responseDiv.className = 'success';
+                    responseDiv.innerHTML = 'Receipt created successfully!';
+                    
+                    // Show both Receipt ID and Transaction ID
+                    document.querySelector('.receipt-id').innerHTML = `
+                        <p>Receipt ID: ${data.receipt_id}</p>
+                        <p>Transaction ID: ${data.transaction_id}</p>
+                        <p><strong>Save these IDs for your records!</strong></p>
+                    `;
+                    document.getElementById('qr-image').src = `/receipt_qr_${data.receipt_id}.png`;
+                    qrResult.style.display = 'block';
+                    
+                    document.getElementById('receipt-form').reset();
+                    document.getElementById('date').valueAsDate = new Date();
+                } else {
+                    responseDiv.className = 'error';
+                    responseDiv.innerHTML = `Error: ${data.error}`;
+                    qrResult.style.display = 'none';
+                }
+            } catch (error) {
+                const responseDiv = document.getElementById('response');
+                responseDiv.className = 'error';
+                responseDiv.innerHTML = `Error: ${error.message}`;
+                document.getElementById('qr-result').style.display = 'none';
+            }
+        });
+
+        // Add this function to show/hide card details based on payment method
+        document.getElementById('payment-method').addEventListener('change', function() {
+            const cardDetails = document.getElementById('card-details');
+            cardDetails.style.display = 
+                (this.value === 'credit' || this.value === 'debit') ? 'block' : 'none';
+        });
+
+        // Set today's date as default
+        document.getElementById('date').valueAsDate = new Date();
+    </script>
+</body>
+</html> 

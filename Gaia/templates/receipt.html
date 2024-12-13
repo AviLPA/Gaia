@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt {{receipt.id}}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .receipt-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .receipt-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .items-list {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .total-section {
+            text-align: right;
+            font-size: 1.2em;
+            font-weight: bold;
+            padding: 20px 0;
+            border-top: 2px solid #eee;
+        }
+        .qr-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .qr-section img {
+            max-width: 200px;
+            height: auto;
+        }
+        .scan-history {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .scan-entry {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        details {
+            margin-top: 10px;
+        }
+        summary {
+            cursor: pointer;
+            color: #2196F3;
+        }
+    </style>
+    <script>
+        // Check if this is a mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        // Hide QR section if on mobile
+        if (isMobile) {
+            document.querySelector('.qr-section').style.display = 'none';
+        }
+
+        // Generate or retrieve device UID using browser fingerprinting
+        function getDeviceUID() {
+            let uid = localStorage.getItem('device_uid');
+            if (!uid) {
+                // Collect browser fingerprint data
+                const fingerprint = {
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    screenResolution: `${window.screen.width}x${window.screen.height}`,
+                    colorDepth: window.screen.colorDepth,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    touchSupport: 'ontouchstart' in window,
+                    cookiesEnabled: navigator.cookieEnabled,
+                    canvas: getCanvasFingerprint(),
+                    webGL: getWebGLFingerprint(),
+                    fonts: getAvailableFonts()
+                };
+
+                // Create a unique identifier based on the fingerprint
+                uid = 'DEVICE-' + hashFingerprint(fingerprint);
+                localStorage.setItem('device_uid', uid);
+                localStorage.setItem('device_info', JSON.stringify(fingerprint));
+            }
+            return uid;
+        }
+
+        // Helper function to get canvas fingerprint
+        function getCanvasFingerprint() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const text = 'GaiaReceipt👋';
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(125,1,62,20);
+            ctx.fillStyle = '#069';
+            ctx.fillText(text, 2, 15);
+            return canvas.toDataURL();
+        }
+
+        // Helper function to get WebGL fingerprint
+        function getWebGLFingerprint() {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (!gl) return null;
+            return {
+                vendor: gl.getParameter(gl.VENDOR),
+                renderer: gl.getParameter(gl.RENDERER),
+                version: gl.getParameter(gl.VERSION)
+            };
+        }
+
+        // Helper function to get available fonts
+        function getAvailableFonts() {
+            const baseFonts = ['monospace', 'sans-serif', 'serif'];
+            const fontList = [
+                'Arial', 'Helvetica', 'Times New Roman', 'Times', 'Courier New',
+                'Courier', 'Verdana', 'Georgia', 'Palatino', 'Garamond', 'Bookman',
+                'Comic Sans MS', 'Trebuchet MS', 'Impact'
+            ];
+            
+            return fontList.filter(font => {
+                return baseFonts.some(baseFont => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    context.font = `72px ${baseFont}`;
+                    const baseWidth = context.measureText('mmmmmmmmmmlli').width;
+                    context.font = `72px ${font}, ${baseFont}`;
+                    const testWidth = context.measureText('mmmmmmmmmmlli').width;
+                    return baseWidth !== testWidth;
+                });
+            });
+        }
+
+        // Helper function to create a hash from the fingerprint
+        function hashFingerprint(fingerprint) {
+            const str = JSON.stringify(fingerprint);
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(36);
+        }
+
+        // Record scan
+        async function recordScan(receiptId, token) {
+            try {
+                const response = await fetch(`/api/scan/${receiptId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        device_uid: getDeviceUID(),
+                        token: token
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Mark this scan as recorded in session storage
+                    sessionStorage.setItem(`scan_recorded_${receiptId}`, 'true');
+                    location.reload(); // Refresh once to show the new scan
+                } else {
+                    alert('Failed to record scan: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to record scan');
+            }
+        }
+
+        // Record scan on page load if token is present and hasn't been recorded yet
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const receiptId = window.location.pathname.split('/').pop();
+            
+            // Only record scan if token exists and hasn't been recorded in this session
+            if (token && !sessionStorage.getItem(`scan_recorded_${receiptId}`)) {
+                recordScan(receiptId, token);
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="receipt-header">
+            <h1>Digital Receipt</h1>
+            <p>{{ receipt['store'] }}</p>
+            <p>{{ receipt['timestamp'] }}</p>
+        </div>
+
+        <div class="receipt-details">
+            <div>
+                <strong>Receipt ID:</strong><br>
+                {{ receipt.id }}
+            </div>
+            <div>
+                <strong>Payment Method:</strong><br>
+                {{ receipt['payment_method'] }}
+            </div>
+        </div>
+
+        <div class="items-list">
+            <h3>Items</h3>
+            {% for item in receipt['items'] %}
+                <div class="item-row">
+                    <span>{{ item['name'] }}</span>
+                    <span>${{ item['price'] }}</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="total-section">
+            <p>Total: ${{ receipt['total'] }}</p>
+        </div>
+
+        <div class="qr-section">
+            <h3>QR Code</h3>
+            <img src="{{ qr_code_url }}" alt="QR Code for Receipt">
+        </div>
+
+        <div class="scan-history">
+            <h3>Scan History</h3>
+            {% if scans %}
+                {% for scan in scans %}
+                <div class="scan-entry">
+                    <p><strong>Scanned on:</strong> {{ scan['timestamp'] }}</p>
+                    <p><strong>Device ID:</strong> {{ scan['device_uid'] if scan.get('device_uid') else 'Unknown Device' }}</p>
+                    {% if scan.get('device_info') %}
+                    <details>
+                        <summary>View Device Details</summary>
+                        <p>Device Type: {{ scan['device_info']['model'] if scan['device_info'].get('model') else 'Unknown' }}</p>
+                        <p>Browser: {{ scan['device_info']['browser'] if scan['device_info'].get('browser') else 'Unknown' }}</p>
+                        <p>Platform: {{ scan['device_info']['platform'] if scan['device_info'].get('platform') else 'Unknown' }}</p>
+                    </details>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No scans recorded yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Function to record a scan
+        async function recordScan() {
+            try {
+                const receiptId = '{{ receipt_id }}';
+                const token = '{{ token }}';
+                // Check if we've already recorded a scan this session
+                const scanKey = `scan_recorded_${receiptId}`;
+                if (sessionStorage.getItem(scanKey)) {
+                    console.log('Scan already recorded this session');
+                    return;
+                }
+                
+                let deviceUid = localStorage.getItem('device_uid');
+                console.log('Recording scan for receipt:', receiptId);
+                
+                const response = await fetch(`/api/scan/${receiptId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        device_uid: deviceUid,
+                        token: token
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Scan response:', data);
+                
+                if (data.success && data.device_uid) {
+                    localStorage.setItem('device_uid', data.device_uid);
+                    // Mark this scan as recorded for this session
+                    sessionStorage.setItem(scanKey, 'true');
+                    // Refresh the page to show updated scan history
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error recording scan:', error);
+            }
+        }
+        
+        // Only record scan if we haven't already this session
+        if (!sessionStorage.getItem(`scan_recorded_${receiptId}`)) {
+            recordScan();
+        }
+        
+        // Debug function to check scans
+        window.checkScans = async function() {
+            try {
+                const receiptId = '{{ receipt_id }}';
+                const response = await fetch(`/api/debug/scans/${receiptId}`);
+                const data = await response.json();
+                console.log('Debug scan data:', data);
+                
+                const debugOutput = document.getElementById('debug-output');
+                if (debugOutput) {
+                    debugOutput.textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                console.error('Error checking scans:', error);
+            }
+        }
+    });
+    </script>
+
+    {% if debug %}
+    <div style="margin-top: 20px; padding: 10px; background: #f0f0f0;">
+        <h3>Debug Information</h3>
+        <button onclick="checkScans()">Check Scans</button>
+        <pre id="debug-output"></pre>
+    </div>
+    {% endif %}
+</body>
+</html> 

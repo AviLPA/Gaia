@@ -1,0 +1,1 @@
+web: gunicorn gaia:app --config gunicorn_config.py 

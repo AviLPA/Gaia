@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Receipt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .receipt-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .store-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .receipt-date {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .items-container {
+            margin: 20px 0;
+        }
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .item-name {
+            flex-grow: 1;
+        }
+        .item-price {
+            margin-left: 15px;
+        }
+        .total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 2px solid #333;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-code img {
+            max-width: 200px;
+            height: auto;
+        }
+        .scan-history {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .scan-history h3 {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .scan-entry {
+            background: #f9f9f9;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .scan-timestamp {
+            color: #888;
+            font-size: 12px;
+        }
+        .save-button {
+            display: block;
+            width: 100%;
+            max-width: 200px;
+            margin: 20px auto;
+            padding: 12px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+        
+        .save-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="store-name">{{ receipt.store }}</div>
+        <div class="receipt-date">{{ receipt.timestamp }}</div>
+
+        <div class="items-container">
+            {% for item in receipt.items %}
+            <div class="item">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-price">${{ "%.2f"|format(item.price) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="total">
+            <span>Total</span>
+            <span>${{ "%.2f"|format(receipt.total) }}</span>
+        </div>
+
+        <div class="qr-code">
+            <img src="{{ qr_code_url }}" alt="Receipt QR Code">
+        </div>
+
+        <a href="/generate-pdf/{{ receipt_id }}" class="save-button">Save Receipt</a>
+
+        <div class="scan-history">
+            <h3>Scan History</h3>
+            {% if scans %}
+                {% for scan in scans %}
+                <div class="scan-entry">
+                    <div>Device: {{ scan.device_info.model if scan.device_info and scan.device_info.model else 'Mobile Device' }}</div>
+                    <div class="scan-timestamp">{{ scan.timestamp }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="scan-entry">
+                    <div>Device: Mobile Device</div>
+                    <div class="scan-timestamp">{{ receipt.timestamp }}</div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Function to get or create device UID
+        function getDeviceUID() {
+            let deviceUID = localStorage.getItem('device_uid');
+            if (!deviceUID) {
+                deviceUID = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('device_uid', deviceUID);
+            }
+            return deviceUID;
+        }
+
+        // Function to record a scan
+        async function recordScan() {
+            try {
+                const deviceUID = getDeviceUID();
+                const response = await fetch('/api/scan/{{ receipt_id }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        device_uid: deviceUID,
+                        token: '{{ receipt.validation_token }}'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.device_uid) {
+                    localStorage.setItem('device_uid', data.device_uid);
+                }
+                
+                // Update scan history after recording
+                updateScanHistory();
+            } catch (error) {
+                console.error('Error recording scan:', error);
+            }
+        }
+
+        // Add real-time updates for scan history
+        function updateScanHistory() {
+            console.log('Updating scan history...');
+            fetch('/api/receipt/{{ receipt_id }}/scans')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received scan data:', data);
+                    const scanHistoryDiv = document.querySelector('.scan-history');
+                    if (data.length > 0) {
+                        let html = '<h3>Scan History</h3>';
+                        data.forEach(scan => {
+                            const deviceId = scan.device_uid ? `(ID: ${scan.device_uid.substr(0, 8)}...)` : '';
+                            html += `
+                                <div class="scan-entry">
+                                    <div>Device: ${scan.device_info && scan.device_info.model ? scan.device_info.model : 'Mobile Device'} ${deviceId}</div>
+                                    <div class="scan-timestamp">${scan.timestamp}</div>
+                                </div>
+                            `;
+                        });
+                        scanHistoryDiv.innerHTML = html;
+                    } else {
+                        const deviceUID = getDeviceUID();
+                        scanHistoryDiv.innerHTML = `
+                            <h3>Scan History</h3>
+                            <div class="scan-entry">
+                                <div>Device: Mobile Device (ID: ${deviceUID.substr(0, 8)}...)</div>
+                                <div class="scan-timestamp">${new Date().toLocaleString()}</div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating scan history:', error);
+                });
+        }
+
+        // Record initial scan when page loads
+        recordScan();
+
+        // Update scan history every 30 seconds
+        setInterval(updateScanHistory, 30000);
+    </script>
+</body>
+</html> 
