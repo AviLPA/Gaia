@@ -18,20 +18,20 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app with custom template folder
-template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Gaia', 'templates')
 app = Flask(__name__, 
            template_folder=template_dir,
-           static_folder=os.path.join(os.path.dirname(template_dir), 'static'))
+           static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Gaia', 'static'))
 
 # Update UPLOAD_FOLDER path
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Gaia', 'static')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Initialize Firebase with timeout settings
 try:
     print("Initializing Firebase...")
-    creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'path/to/local/credentials.json')
+    creds_path = '/Users/avicomputer/Desktop/Start Ups/Gaia/Code/gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json'
     print(f"Looking for credentials at: {creds_path}")
     
     # Add timeout options
