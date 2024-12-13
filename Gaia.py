@@ -31,7 +31,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Initialize Firebase with timeout settings
 try:
     print("Initializing Firebase...")
-    creds_path = '/Users/avicomputer/Desktop/Start Ups/Gaia/Code/gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json'
+    creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'path/to/local/credentials.json')
     print(f"Looking for credentials at: {creds_path}")
     
     # Add timeout options

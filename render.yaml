@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: gaia-receipt
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python gaia.py
+    envVars:
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        sync: false 
