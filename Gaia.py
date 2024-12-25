@@ -33,36 +33,10 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Gaia',
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# At the start of your application
-initialize_firebase()
-
-try:
-    # First, try to get credentials from environment variable
-    firebase_creds = os.getenv('FIREBASE_CREDENTIALS')
-    if firebase_creds:
-        try:
-            # Try to parse the JSON string from environment variable
-            cred_dict = json.loads(firebase_creds)
-            cred = credentials.Certificate(cred_dict)
-            logger.info("Successfully loaded Firebase credentials from environment variable")
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.warning(f"Failed to parse FIREBASE_CREDENTIALS environment variable: {e}")
-            # Fall back to JSON file
-            cred = credentials.Certificate('gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json')
-            logger.info("Falling back to credentials file")
-    else:
-        # If no environment variable, use JSON file
-        logger.info("No FIREBASE_CREDENTIALS environment variable found, using credentials file")
-        cred = credentials.Certificate('gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json')
-
-    # Initialize Firebase app
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
-    logger.info("Firebase initialized successfully")
-
-except Exception as e:
-    logger.error(f"Failed to initialize Firebase: {e}", exc_info=True)
-    raise
+# Initialize Firebase
+firebase_app = initialize_firebase()
+db = firestore.client()
+logger.info("Firebase initialized successfully")
 
 # Keep your existing HOME_TEMPLATE here
 HOME_TEMPLATE = """
