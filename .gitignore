@@ -17,4 +17,9 @@ env/
 .idea/
 
 # Generated QR codes
-static/receipt_qr_*.png 
+static/receipt_qr_*.png
+
+# Local development
+*.log
+.env.local
+.env.development 

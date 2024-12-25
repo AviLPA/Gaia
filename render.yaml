@@ -3,7 +3,7 @@ services:
     name: gaia-receipt
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app
+    startCommand: gunicorn gaia:app
     envVars:
-      - key: GOOGLE_APPLICATION_CREDENTIALS
-        sync: false 
+      - key: PYTHON_VERSION
+        value: 3.9.0 
