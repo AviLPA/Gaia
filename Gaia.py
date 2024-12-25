@@ -85,8 +85,8 @@ class ReceiptManager:
             logger.debug(f"Starting QR generation for receipt {receipt_id}...")
             
             if base_url is None:
-                # Use the specific local IP address instead of hostname
-                base_url = "http://192.168.1.23:8080"
+                # Use the Render URL from environment variable, or fall back to local for development
+                base_url = os.getenv('RENDER_EXTERNAL_URL', 'http://localhost:8080')
             
             # Generate a validation token
             validation_token = uuid.uuid4().hex
