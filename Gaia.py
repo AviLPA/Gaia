@@ -426,35 +426,47 @@ def get_transaction(transaction_id):
 def record_scan(receipt_id):
     try:
         data = request.json
+        logger.debug(f"Scan endpoint called for receipt {receipt_id}")
+        logger.debug(f"Request headers: {dict(request.headers)}")
         logger.debug(f"Received scan data: {data}")
         
         # Get device_uid from request or generate new one
         device_uid = data.get('device_uid')
+        logger.debug(f"Initial device_uid: {device_uid}")
+        
         if not device_uid:
             device_uid = str(uuid.uuid4())
             logger.info(f"Generated new device_uid: {device_uid}")
         
         token = data.get('token')
+        logger.debug(f"Token received: {token}")
         
         # Verify the receipt exists
         receipt = receipt_manager.get_receipt(receipt_id)
+        logger.debug(f"Receipt found: {bool(receipt)}")
+        
         if not receipt:
             logger.error(f"Receipt not found: {receipt_id}")
             return jsonify({"error": "Receipt not found"}), 404
         
         # Record the scan
+        logger.debug("Attempting to record scan...")
         success = scan_manager.record_scan(receipt_id, device_uid, token)
+        logger.debug(f"Scan recording success: {success}")
         
         if success:
+            logger.debug("Returning success response")
             return jsonify({
                 "success": True,
-                "device_uid": device_uid  # Return device_uid so client can store it
+                "device_uid": device_uid
             })
         else:
+            logger.debug("Returning failure response")
             return jsonify({"error": "Failed to record scan"}), 500
             
     except Exception as e:
         logger.error(f"Error recording scan: {e}", exc_info=True)
+        logger.debug("Stack trace:", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/receipt/<receipt_id>')
@@ -590,6 +602,85 @@ def debug_scans(receipt_id):
             'error': str(e),
             'receipt_id': receipt_id
         }), 500
+
+@app.route('/api/stats/scans/<receipt_id>')
+def get_scan_stats(receipt_id):
+    """Get detailed scan statistics for a receipt"""
+    try:
+        # Get all scans for the receipt
+        scan_refs = db.collection('receipts')\
+            .document(receipt_id)\
+            .collection('scans')\
+            .order_by('timestamp', direction=firestore.Query.DESCENDING)\
+            .stream()
+        
+        # Collect scan data
+        scans = []
+        unique_devices = set()
+        
+        for scan in scan_refs:
+            scan_data = scan.to_dict()
+            device_uid = scan_data.get('device_uid', 'unknown')
+            unique_devices.add(device_uid)
+            
+            # Add formatted scan info
+            scans.append({
+                'timestamp': scan_data.get('timestamp'),
+                'device_uid': device_uid,
+                'device_info': {
+                    'model': scan_data.get('device_info', {}).get('model', 'Unknown'),
+                    'platform': scan_data.get('device_info', {}).get('platform', 'Unknown'),
+                    'browser': scan_data.get('device_info', {}).get('browser', 'Unknown')
+                }
+            })
+        
+        stats = {
+            'receipt_id': receipt_id,
+            'total_scans': len(scans),
+            'unique_devices': len(unique_devices),
+            'scans_by_device': {},
+            'all_scans': scans
+        }
+        
+        # Count scans per device
+        for scan in scans:
+            device = scan['device_uid']
+            if device not in stats['scans_by_device']:
+                stats['scans_by_device'][device] = {
+                    'count': 0,
+                    'last_scan': None,
+                    'device_info': scan['device_info']
+                }
+            stats['scans_by_device'][device]['count'] += 1
+            if not stats['scans_by_device'][device]['last_scan']:
+                stats['scans_by_device'][device]['last_scan'] = scan['timestamp']
+        
+        return jsonify(stats)
+        
+    except Exception as e:
+        logger.error(f"Error getting scan stats: {e}", exc_info=True)
+        return jsonify({
+            'error': str(e),
+            'receipt_id': receipt_id
+        }), 500
+
+@app.route('/receipt/<receipt_id>/stats')
+def view_receipt_stats(receipt_id):
+    try:
+        # Get receipt details
+        receipt = receipt_manager.get_receipt(receipt_id)
+        if not receipt:
+            return jsonify({"error": "Receipt not found"}), 404
+            
+        # Get scan stats
+        stats = get_scan_stats(receipt_id).get_json()
+        
+        return render_template('receipt_stats.html',
+                             receipt=receipt,
+                             stats=stats)
+    except Exception as e:
+        logger.error(f"Error viewing stats: {e}", exc_info=True)
+        return jsonify({"error": "Error viewing stats"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080, host='0.0.0.0')

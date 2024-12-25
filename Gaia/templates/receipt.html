@@ -281,20 +281,15 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', async function() {
-        // Function to record a scan
         async function recordScan() {
             try {
                 const receiptId = '{{ receipt_id }}';
                 const token = '{{ token }}';
-                // Check if we've already recorded a scan this session
-                const scanKey = `scan_recorded_${receiptId}`;
-                if (sessionStorage.getItem(scanKey)) {
-                    console.log('Scan already recorded this session');
-                    return;
-                }
-                
                 let deviceUid = localStorage.getItem('device_uid');
-                console.log('Recording scan for receipt:', receiptId);
+                
+                console.log('Starting scan recording process...');
+                console.log('Receipt ID:', receiptId);
+                console.log('Device UID:', deviceUid);
                 
                 const response = await fetch(`/api/scan/${receiptId}`, {
                     method: 'POST',
@@ -311,47 +306,56 @@
                 console.log('Scan response:', data);
                 
                 if (data.success && data.device_uid) {
+                    console.log('Saving new device_uid:', data.device_uid);
                     localStorage.setItem('device_uid', data.device_uid);
-                    // Mark this scan as recorded for this session
-                    sessionStorage.setItem(scanKey, 'true');
-                    // Refresh the page to show updated scan history
                     location.reload();
                 }
             } catch (error) {
+                console.error('Detailed scan error:', error);
                 console.error('Error recording scan:', error);
             }
         }
         
+        console.log('Page loaded, checking if scan should be recorded...');
         // Only record scan if we haven't already this session
         if (!sessionStorage.getItem(`scan_recorded_${receiptId}`)) {
+            console.log('Recording new scan...');
             recordScan();
-        }
-        
-        // Debug function to check scans
-        window.checkScans = async function() {
-            try {
-                const receiptId = '{{ receipt_id }}';
-                const response = await fetch(`/api/debug/scans/${receiptId}`);
-                const data = await response.json();
-                console.log('Debug scan data:', data);
-                
-                const debugOutput = document.getElementById('debug-output');
-                if (debugOutput) {
-                    debugOutput.textContent = JSON.stringify(data, null, 2);
-                }
-            } catch (error) {
-                console.error('Error checking scans:', error);
-            }
+        } else {
+            console.log('Scan already recorded this session');
         }
     });
     </script>
 
     {% if debug %}
     <div style="margin-top: 20px; padding: 10px; background: #f0f0f0;">
-        <h3>Debug Information</h3>
-        <button onclick="checkScans()">Check Scans</button>
+        <h3>Debug Tools</h3>
+        <button onclick="debugScan()">Test Scan Recording</button>
+        <button onclick="clearScanHistory()">Clear Scan Session</button>
         <pre id="debug-output"></pre>
+        
+        <script>
+        async function debugScan() {
+            const output = document.getElementById('debug-output');
+            output.textContent = 'Testing scan...';
+            
+            try {
+                await recordScan();
+                output.textContent += '\nScan recorded successfully';
+            } catch (error) {
+                output.textContent += '\nError: ' + error.message;
+            }
+        }
+        
+        function clearScanHistory() {
+            const receiptId = '{{ receipt_id }}';
+            sessionStorage.removeItem(`scan_recorded_${receiptId}`);
+            localStorage.removeItem('device_uid');
+            document.getElementById('debug-output').textContent = 'Scan history cleared';
+        }
+        </script>
     </div>
     {% endif %}
 </body>
+</html> 
 </html> 

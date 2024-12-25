@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt Scan Statistics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stats-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .device-entry {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .summary {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Receipt Scan Statistics</h1>
+        
+        <div class="summary">
+            <p><strong>Store:</strong> {{ receipt.store }}</p>
+            <p><strong>Receipt ID:</strong> {{ stats.receipt_id }}</p>
+            <p><strong>Total Scans:</strong> {{ stats.total_scans }}</p>
+            <p><strong>Unique Devices:</strong> {{ stats.unique_devices }}</p>
+        </div>
+
+        <h2>Scans by Device</h2>
+        <div class="stats-section">
+            {% for device_id, device_data in stats.scans_by_device.items() %}
+            <div class="device-entry">
+                <h3>Device ID: {{ device_id }}</h3>
+                <p><strong>Number of Scans:</strong> {{ device_data.count }}</p>
+                <p><strong>Last Scan:</strong> {{ device_data.last_scan }}</p>
+                <p><strong>Device Type:</strong> {{ device_data.device_info.model }}</p>
+                <p><strong>Platform:</strong> {{ device_data.device_info.platform }}</p>
+                <p><strong>Browser:</strong> {{ device_data.device_info.browser }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <h2>All Scans Timeline</h2>
+        <div class="stats-section">
+            {% for scan in stats.all_scans %}
+            <div class="device-entry">
+                <p><strong>Time:</strong> {{ scan.timestamp }}</p>
+                <p><strong>Device:</strong> {{ scan.device_info.model }}</p>
+                <p><strong>Platform:</strong> {{ scan.device_info.platform }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html> 

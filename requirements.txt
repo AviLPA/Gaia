@@ -3,5 +3,11 @@ firebase-admin==6.2.0
 qrcode[pil]
 python-dateutil
 gunicorn==21.2.0
-reportlab
-Pillow
+reportlab>=3.6.8
+Pillow>=9.0.0
+Jinja2>=3.0
+Werkzeug>=2.0
+click>=8.0
+itsdangerous>=2.0
+python-dotenv
+requests>=2.25.0
