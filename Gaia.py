@@ -12,6 +12,11 @@ import logging
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from io import BytesIO
+from dotenv import load_dotenv
+from firebase_config import initialize_firebase
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -28,23 +33,35 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Gaia',
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# Initialize Firebase with timeout settings
+# At the start of your application
+initialize_firebase()
+
 try:
-    print("Initializing Firebase...")
-    creds_path = '/Users/avicomputer/Desktop/Start Ups/Gaia/Code/gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json'
-    print(f"Looking for credentials at: {creds_path}")
-    
-    # Add timeout options
-    options = {
-        'timeoutSeconds': 30,
-        'cacheSizeBytes': 1024 * 1024  # 1MB cache
-    }
-    cred = credentials.Certificate(creds_path)
-    firebase_admin.initialize_app(cred, options={'databaseURL': 'https://gaia-f1ac4.firebaseio.com'})
+    # First, try to get credentials from environment variable
+    firebase_creds = os.getenv('FIREBASE_CREDENTIALS')
+    if firebase_creds:
+        try:
+            # Try to parse the JSON string from environment variable
+            cred_dict = json.loads(firebase_creds)
+            cred = credentials.Certificate(cred_dict)
+            logger.info("Successfully loaded Firebase credentials from environment variable")
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse FIREBASE_CREDENTIALS environment variable: {e}")
+            # Fall back to JSON file
+            cred = credentials.Certificate('gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json')
+            logger.info("Falling back to credentials file")
+    else:
+        # If no environment variable, use JSON file
+        logger.info("No FIREBASE_CREDENTIALS environment variable found, using credentials file")
+        cred = credentials.Certificate('gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json')
+
+    # Initialize Firebase app
+    firebase_admin.initialize_app(cred)
     db = firestore.client()
-    print("Firebase initialized successfully!")
+    logger.info("Firebase initialized successfully")
+
 except Exception as e:
-    print(f"Error initializing Firebase: {e}")
+    logger.error(f"Failed to initialize Firebase: {e}", exc_info=True)
     raise
 
 # Keep your existing HOME_TEMPLATE here
@@ -683,4 +700,6 @@ def view_receipt_stats(receipt_id):
         return jsonify({"error": "Error viewing stats"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080, host='0.0.0.0')
+    # Get port from environment variable (Render sets this)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
