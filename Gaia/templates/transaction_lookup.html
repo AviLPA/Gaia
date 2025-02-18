@@ -1,38 +1,157 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Transaction Lookup</title>
-    <style>
-        /* Similar styling as receipt_creator.html */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background: #f0f0f0;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .transaction-details {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            display: none;
-        }
-        .payment-info {
-            background: #f8f8f8;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Transaction Lookup - Gaia{% endblock %}
+
+{% block styles %}
+    .container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .search-section {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+
+    button {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+
+    button:hover {
+        background: var(--secondary-color);
+    }
+
+    .transaction-details {
+        display: none;
+        margin-top: 2rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+    }
+
+    .transaction-details.active {
+        display: block;
+    }
+
+    .detail-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-section h3 {
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .items-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .items-list li {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .error-message {
+        color: #dc2626;
+        padding: 1rem;
+        background: #fef2f2;
+        border-radius: 6px;
+        margin-top: 1rem;
+        display: none;
+    }
+
+    .sharing-options {
+        display: flex;
+        gap: 2rem;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .share-method {
+        flex: 1;
+        text-align: center;
+    }
+
+    .nfc-area {
+        border: 2px dashed var(--primary-color);
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #f0fdf4;
+    }
+
+    .nfc-area:hover {
+        background: #ecfdf5;
+    }
+
+    .nfc-icon {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .nfc-text {
+        color: var(--primary-color);
+        font-weight: 500;
+    }
+
+    .success-animation {
+        display: none;
+        color: var(--success-color);
+    }
+
+    .qr-section {
+        flex: 1;
+        text-align: center;
+    }
+
+    .qr-section img {
+        max-width: 150px;
+        height: auto;
+        margin: 1rem auto;
+        display: block;
+    }
+
+    .qr-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+
+    .method-label {
+        font-weight: 500;
+        margin-bottom: 1rem;
+        color: var(--text-color);
+    }
+{% endblock %}
+
+{% block content %}
     <div class="container">
         <h1>Transaction Lookup</h1>
         <div class="search-section">
@@ -40,46 +159,127 @@
             <button onclick="lookupTransaction()">Search</button>
         </div>
         
+        <div id="error-message" class="error-message"></div>
+        
         <div id="transaction-details" class="transaction-details">
-            <!-- Transaction details will be displayed here -->
+            <!-- Transaction details will be populated here -->
+        </div>
+
+        <div class="sharing-options" id="sharing-options" style="display: none;">
+            <div class="share-method">
+                <div class="method-label">Quick Transfer</div>
+                <div class="nfc-area" onclick="simulateNFCTransfer()">
+                    <div class="nfc-icon">
+                        <i class="fas fa-wifi"></i>
+                    </div>
+                    <div class="nfc-text" id="nfc-text">Tap Phone Here</div>
+                    <div class="success-animation" id="success-animation">
+                        <i class="fas fa-check-circle"></i>
+                        <div>Transferred!</div>
+                    </div>
+                </div>
+            </div>
+            <div class="share-method">
+                <div class="method-label">QR Code</div>
+                <div class="qr-section">
+                    <img id="qr-code" src="" alt="QR Code">
+                    <div class="qr-label">Scan to view receipt</div>
+                </div>
+            </div>
         </div>
     </div>
+{% endblock %}
 
-    <script>
-        async function lookupTransaction() {
-            const transactionId = document.getElementById('transaction-id').value;
-            const detailsDiv = document.getElementById('transaction-details');
+{% block scripts %}
+<script>
+    async function lookupTransaction() {
+        const transactionId = document.getElementById('transaction-id').value;
+        const detailsContainer = document.getElementById('transaction-details');
+        const errorMessage = document.getElementById('error-message');
+        const sharingOptions = document.getElementById('sharing-options');
+        
+        try {
+            const response = await fetch(`/api/transaction/${transactionId}`);
+            const data = await response.json();
             
-            try {
-                const response = await fetch(`/api/transaction/${transactionId}`);
-                const data = await response.json();
+            if (response.ok) {
+                errorMessage.style.display = 'none';
+                detailsContainer.innerHTML = `
+                    <div class="detail-section">
+                        <h3>Transaction Details</h3>
+                        <p>Transaction ID: ${data.transaction_id}</p>
+                        <p>Date: ${data.timestamp}</p>
+                        <p>Payment Method: ${data.payment_method}</p>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h3>Receipt Details</h3>
+                        <p>Store: ${data.receipt.store}</p>
+                        <p>Total: $${data.receipt.total}</p>
+                        <h4>Items:</h4>
+                        <ul class="items-list">
+                            ${data.receipt.items.map(item => `
+                                <li>
+                                    <span>${item.name}</span>
+                                    <span>$${item.price}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+                detailsContainer.classList.add('active');
                 
-                if (response.ok) {
-                    detailsDiv.style.display = 'block';
-                    detailsDiv.innerHTML = `
-                        <h2>Transaction Details</h2>
-                        <p><strong>Transaction ID:</strong> ${data.transaction_id}</p>
-                        <p><strong>Date:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
-                        <p><strong>Payment Method:</strong> ${data.payment_method}</p>
-                        
-                        <div class="payment-info">
-                            ${data.card_info.last_four ? 
-                                `<p><strong>Card ending in:</strong> ${data.card_info.last_four}</p>
-                                 <p><strong>Expiration:</strong> ${data.card_info.exp_date}</p>` 
-                                : ''}
-                        </div>
-                        
-                        <h3>Receipt Information</h3>
-                        <p><strong>Store:</strong> ${data.receipt.store}</p>
-                        <p><strong>Total:</strong> $${data.receipt.total.toFixed(2)}</p>
-                    `;
-                } else {
-                    detailsDiv.innerHTML = `<p class="error">Error: ${data.error}</p>`;
-                }
-            } catch (error) {
-                detailsDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+                // Show sharing options and update QR code
+                sharingOptions.style.display = 'flex';
+                // Use the receipt_id from the transaction data
+                const receiptId = data.receipt_id;
+                document.getElementById('qr-code').src = `/receipt_qr_${receiptId}.png`;
+                console.log('QR Code URL:', `/receipt_qr_${receiptId}.png`); // Debug log
+            } else {
+                errorMessage.textContent = data.error || 'Transaction not found';
+                errorMessage.style.display = 'block';
+                detailsContainer.classList.remove('active');
+                sharingOptions.style.display = 'none';
             }
+        } catch (error) {
+            console.error('Error:', error); // Debug log
+            errorMessage.textContent = 'Error looking up transaction';
+            errorMessage.style.display = 'block';
+            detailsContainer.classList.remove('active');
+            sharingOptions.style.display = 'none';
         }
-    </script>
-</body>
-</html> 
+    }
+
+    function simulateNFCTransfer() {
+        const nfcText = document.getElementById('nfc-text');
+        const successAnimation = document.getElementById('success-animation');
+        const nfcArea = document.querySelector('.nfc-area');
+
+        // Add active state
+        nfcArea.style.background = '#d1fae5';
+        nfcText.style.display = 'none';
+        
+        // Show loading state
+        setTimeout(() => {
+            nfcText.textContent = 'Transferring...';
+            nfcText.style.display = 'block';
+        }, 500);
+
+        // Show success state
+        setTimeout(() => {
+            nfcText.style.display = 'none';
+            successAnimation.style.display = 'block';
+            nfcArea.style.borderStyle = 'solid';
+        }, 2000);
+
+        // Reset after 5 seconds
+        setTimeout(() => {
+            nfcText.textContent = 'Tap Phone Here';
+            nfcText.style.display = 'block';
+            successAnimation.style.display = 'none';
+            nfcArea.style.background = '#f0fdf4';
+            nfcArea.style.borderStyle = 'dashed';
+        }, 5000);
+    }
+</script>
+{% endblock %} 

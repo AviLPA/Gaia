@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}My Receipts - Gaia{% endblock %}
+
+{% block styles %}
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .welcome-section {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+
+    .receipts-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-top: 2rem;
+    }
+
+    .receipts-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .search-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .search-bar input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+    }
+
+    .receipts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .receipt-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+
+    .receipt-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .store-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .receipt-date {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .receipt-total {
+        margin-top: 1rem;
+        font-weight: 500;
+    }
+
+    .demo-section {
+        margin-top: 2rem;
+        padding: 2rem;
+        background: #f0fdf4;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .demo-phone {
+        position: relative;
+        width: 300px;
+        height: 600px;
+        margin: 2rem auto;
+        border: 12px solid #333;
+        border-radius: 36px;
+        background: white;
+        padding: 1rem;
+    }
+
+    .nfc-animation {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        opacity: 0.2;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0.2;
+        }
+        50% {
+            transform: translate(-50%, -50%) scale(1.5);
+            opacity: 0.1;
+        }
+        100% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0.2;
+        }
+    }
+{% endblock %}
+
+{% block content %}
+    <div class="dashboard-container">
+        <div class="welcome-section">
+            <h1>Welcome back, {{ user.name }}</h1>
+            <p>View and manage your digital receipts</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_receipts }}</div>
+                <div class="stat-label">Total Receipts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${{ stats.total_spent }}</div>
+                <div class="stat-label">Total Spent</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.stores }}</div>
+                <div class="stat-label">Unique Stores</div>
+            </div>
+        </div>
+
+        <div class="receipts-section">
+            <div class="receipts-header">
+                <h2>Recent Receipts</h2>
+                <div class="search-bar">
+                    <input type="text" placeholder="Search receipts..." id="searchInput">
+                </div>
+            </div>
+
+            <div class="receipts-grid" id="receiptsGrid">
+                <!-- Receipts will be populated here -->
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>How it Works</h2>
+            <p>Simply tap your phone at checkout to receive your digital receipt</p>
+            
+            <div class="demo-phone">
+                <div class="nfc-animation"></div>
+                <div id="demoReceipt" style="display: none;">
+                    <!-- Receipt will appear here in demo -->
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Fetch and display receipts
+    async function fetchReceipts() {
+        try {
+            const response = await fetch('/api/customer/receipts');
+            const data = await response.json();
+            
+            if (response.ok) {
+                displayReceipts(data.receipts);
+            }
+        } catch (error) {
+            console.error('Error fetching receipts:', error);
+        }
+    }
+
+    function displayReceipts(receipts) {
+        const grid = document.getElementById('receiptsGrid');
+        grid.innerHTML = receipts.map(receipt => `
+            <div class="receipt-card" onclick="viewReceipt('${receipt.id}')">
+                <div class="store-name">${receipt.store}</div>
+                <div class="receipt-date">${new Date(receipt.timestamp).toLocaleDateString()}</div>
+                <div class="receipt-total">Total: $${receipt.total.toFixed(2)}</div>
+            </div>
+        `).join('');
+    }
+
+    function viewReceipt(id) {
+        window.location.href = `/receipt/${id}`;
+    }
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.receipt-card');
+        
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+        });
+    });
+
+    // Demo animation
+    function runDemo() {
+        setTimeout(() => {
+            const demoReceipt = document.getElementById('demoReceipt');
+            demoReceipt.style.display = 'block';
+            demoReceipt.innerHTML = `
+                <div class="receipt-card">
+                    <div class="store-name">Demo Store</div>
+                    <div class="receipt-date">${new Date().toLocaleDateString()}</div>
+                    <div class="receipt-total">Total: $25.99</div>
+                </div>
+            `;
+        }, 3000);
+    }
+
+    // Initialize
+    fetchReceipts();
+    runDemo();
+</script>
+{% endblock %} 

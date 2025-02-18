@@ -1,7 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 import qrcode
-from flask import Flask, jsonify, request, render_template_string, send_file, render_template
+from flask import Flask, jsonify, request, render_template_string, send_file, render_template, make_response
 import json
 from datetime import datetime
 import uuid
@@ -28,41 +28,16 @@ app = Flask(__name__,
            template_folder=template_dir,
            static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Gaia', 'static'))
 
-# Update UPLOAD_FOLDER path
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Gaia', 'static')
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+# Update UPLOAD_FOLDER path and ensure it exists
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'qrcodes')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# At the start of your application
-initialize_firebase()
+logger.debug(f"Upload folder path: {UPLOAD_FOLDER}")
 
-try:
-    # First, try to get credentials from environment variable
-    firebase_creds = os.getenv('FIREBASE_CREDENTIALS')
-    if firebase_creds:
-        try:
-            # Try to parse the JSON string from environment variable
-            cred_dict = json.loads(firebase_creds)
-            cred = credentials.Certificate(cred_dict)
-            logger.info("Successfully loaded Firebase credentials from environment variable")
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.warning(f"Failed to parse FIREBASE_CREDENTIALS environment variable: {e}")
-            # Fall back to JSON file
-            cred = credentials.Certificate('gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json')
-            logger.info("Falling back to credentials file")
-    else:
-        # If no environment variable, use JSON file
-        logger.info("No FIREBASE_CREDENTIALS environment variable found, using credentials file")
-        cred = credentials.Certificate('gaia-f1ac4-firebase-adminsdk-e2k9l-18490401f2.json')
-
-    # Initialize Firebase app
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
-    logger.info("Firebase initialized successfully")
-
-except Exception as e:
-    logger.error(f"Failed to initialize Firebase: {e}", exc_info=True)
-    raise
+# Initialize Firebase
+firebase_app = initialize_firebase()
+db = firestore.client()
+logger.info("Firebase initialized successfully")
 
 # Keep your existing HOME_TEMPLATE here
 HOME_TEMPLATE = """
@@ -110,9 +85,20 @@ class ReceiptManager:
         try:
             logger.debug(f"Starting QR generation for receipt {receipt_id}...")
             
-            if base_url is None:
-                # Use the specific local IP address instead of hostname
-                base_url = "http://192.168.1.23:8080"
+            # For local development, use local IP address so phones on the same network can access
+            if not base_url:
+                # Get local IP address that's accessible on the network
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                try:
+                    # Doesn't need to be reachable
+                    s.connect(('10.255.255.255', 1))
+                    local_ip = s.getsockname()[0]
+                except Exception:
+                    local_ip = '127.0.0.1'
+                finally:
+                    s.close()
+                base_url = f"http://{local_ip}:8080"
+                logger.debug(f"Using local IP for development: {base_url}")
             
             # Generate a validation token
             validation_token = uuid.uuid4().hex
@@ -130,19 +116,29 @@ class ReceiptManager:
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_H,
-                box_size=8,
+                box_size=10,
                 border=4
             )
             qr.add_data(url)
             qr.make(fit=True)
             
-            qr_image = qr.make_image(fill_color="black", back_color="white")
+            # Create the QR code image
             qr_path = os.path.join(UPLOAD_FOLDER, f"receipt_qr_{receipt_id}.png")
-            qr_image.save(qr_path)
+            logger.debug(f"Saving QR code to: {qr_path}")
             
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(qr_path), exist_ok=True)
+            
+            # Save the QR code with higher resolution
+            img = qr.make_image(fill_color="black", back_color="white")
+            img = img.resize((300, 300))  # Make QR code larger
+            img.save(qr_path, quality=95)  # Save with high quality
+            
+            logger.debug(f"QR code saved successfully at {qr_path}")
             return True
+            
         except Exception as e:
-            logger.error(f"Failed to generate QR code: {e}")
+            logger.error(f"Error generating QR code: {e}", exc_info=True)
             return False
 
 class TransactionManager:
@@ -313,6 +309,7 @@ scan_manager = ScanManager()
 # Flask routes
 @app.route('/')
 def home():
+    """Show the landing page"""
     return render_template('index.html')
 
 @app.route('/receipt/<receipt_id>', methods=['GET'])
@@ -390,16 +387,15 @@ def create_receipt():
         if receipt_id:
             logger.debug("Generating QR code...")
             qr_success = receipt_manager.generate_qr(receipt_id)
-            logger.debug(f"QR generation {'successful' if qr_success else 'failed'}")
+            if not qr_success:
+                logger.error("Failed to generate QR code")
+                return jsonify({"error": "Failed to generate QR code"}), 500
+            logger.debug("QR code generated successfully")
             
             logger.debug("Creating transaction...")
             transaction_id = transaction_manager.create_transaction(receipt_id, payment_data)
             logger.info(f"Generated transaction ID: {transaction_id}")
             
-            logger.debug("Running garbage collection...")
-            gc.collect()
-            
-            logger.debug("Sending response...")
             return jsonify({
                 "receipt_id": receipt_id,
                 "transaction_id": transaction_id
@@ -409,16 +405,31 @@ def create_receipt():
         return jsonify({"error": "Failed to create receipt"}), 500
     except Exception as e:
         logger.error(f"Error in create_receipt: {e}", exc_info=True)
-        gc.collect()
         return jsonify({"error": str(e)}), 500
 
 @app.route('/receipt_qr_<receipt_id>.png')
 def serve_qr(receipt_id):
-    qr_path = os.path.join(UPLOAD_FOLDER, f"receipt_qr_{receipt_id}.png")
-    if not os.path.exists(qr_path):
-        print(f"QR code not found at: {qr_path}")
-        return "QR code not found", 404
-    return send_file(qr_path, mimetype='image/png')
+    """Serve QR code image"""
+    try:
+        qr_path = os.path.join(UPLOAD_FOLDER, f"receipt_qr_{receipt_id}.png")
+        logger.debug(f"Attempting to serve QR code from: {qr_path}")
+        
+        if not os.path.exists(qr_path):
+            logger.error(f"QR code not found at: {qr_path}")
+            # Generate QR code if it doesn't exist
+            receipt = receipt_manager.get_receipt(receipt_id)
+            if receipt:
+                receipt_manager.generate_qr(receipt_id)
+                if os.path.exists(qr_path):
+                    return send_file(qr_path, mimetype='image/png')
+            return "QR code not found", 404
+            
+        logger.debug(f"Successfully found QR code at: {qr_path}")
+        return send_file(qr_path, mimetype='image/png')
+        
+    except Exception as e:
+        logger.error(f"Error serving QR code: {e}", exc_info=True)
+        return "Error serving QR code", 500
 
 @app.route('/create')
 def create_receipt_page():
@@ -430,14 +441,23 @@ def transaction_lookup_page():
 
 @app.route('/api/transaction/<transaction_id>')
 def get_transaction(transaction_id):
-    transaction = transaction_manager.get_transaction(transaction_id)
-    if transaction:
-        # Also get the associated receipt
-        receipt = receipt_manager.get_receipt(transaction['receipt_id'])
-        if receipt:
-            transaction['receipt'] = receipt
-        return jsonify(transaction)
-    return jsonify({"error": "Transaction not found"}), 404
+    try:
+        transaction = transaction_manager.get_transaction(transaction_id)
+        if transaction:
+            # Get the associated receipt
+            receipt = receipt_manager.get_receipt(transaction['receipt_id'])
+            if receipt:
+                # Include both receipt and receipt_id in the response
+                return jsonify({
+                    **transaction,
+                    'receipt': receipt,
+                    'receipt_id': transaction['receipt_id']  # Explicitly include receipt_id
+                })
+            return jsonify({"error": "Receipt not found"}), 404
+        return jsonify({"error": "Transaction not found"}), 404
+    except Exception as e:
+        logger.error(f"Error getting transaction: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/scan/<receipt_id>', methods=['POST'])
 def record_scan(receipt_id):
@@ -699,7 +719,50 @@ def view_receipt_stats(receipt_id):
         logger.error(f"Error viewing stats: {e}", exc_info=True)
         return jsonify({"error": "Error viewing stats"}), 500
 
+@app.route('/receipt/<receipt_id>')
+def view_receipt(receipt_id):
+    """Public route for viewing receipts via QR code"""
+    try:
+        # Get the validation token from query params
+        token = request.args.get('token')
+        
+        if not token:
+            return render_template('error.html', message="Invalid receipt link"), 400
+        
+        # Get receipt details
+        receipt = receipt_manager.get_receipt(receipt_id)
+        
+        if not receipt:
+            return render_template('error.html', message="Receipt not found"), 404
+            
+        # Verify the token matches
+        if receipt.get('validation_token') != token:
+            return render_template('error.html', message="Invalid receipt token"), 401
+        
+        # Record the scan
+        device_uid = request.cookies.get('device_uid', str(uuid.uuid4()))
+        scan_manager.record_scan(receipt_id, device_uid, token)
+        
+        # Render the receipt view template
+        response = make_response(render_template('receipt_view.html', receipt=receipt))
+        response.set_cookie('device_uid', device_uid, max_age=31536000)  # 1 year
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error viewing receipt: {e}", exc_info=True)
+        return render_template('error.html', message="Error viewing receipt"), 500
+
+@app.route('/demo')
+def demo_page():
+    """Show the customer demo page"""
+    return render_template('customer/demo.html')
+
+@app.route('/how-it-works')
+def how_it_works():
+    """Show the how it works page"""
+    return render_template('how_it_works.html')
+
 if __name__ == '__main__':
-    # Get port from environment variable (Render sets this)
     port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    # Use 0.0.0.0 to allow external connections
+    app.run(host='0.0.0.0', port=port, debug=True)

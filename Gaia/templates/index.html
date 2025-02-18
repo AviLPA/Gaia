@@ -1,433 +1,403 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Gaia Digital Receipt System</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #3498db;
-        }
-        .tab {
-            padding: 12px 24px;
-            cursor: pointer;
-            background: #f8f9fa;
-            border: none;
-            margin-right: 5px;
-            border-radius: 5px 5px 0 0;
-            transition: all 0.3s ease;
-        }
-        .tab.active {
-            background: #3498db;
-            color: white;
-        }
-        .tab-content {
-            display: none;
-            padding: 20px;
-            background: #fff;
-            border-radius: 0 0 5px 5px;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #2c3e50;
-            font-weight: bold;
-        }
-        input[type="text"],
-        input[type="number"],
-        input[type="date"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background: #3498db;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-        button:hover {
-            background: #2980b9;
-        }
-        .result-container {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            display: none;
-        }
-        .items-container {
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-        }
-        .item {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .remove-item {
-            background: #e74c3c;
-        }
-        .remove-item:hover {
-            background: #c0392b;
-        }
-        #qr-container {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            display: none;
-        }
-        #qr-container img {
-            max-width: 300px;
-            height: auto;
-        }
-        .receipt-summary {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .qr-section {
-            text-align: center;
-            padding: 20px;
-            background: #f9f9f9;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-        .qr-section img {
-            max-width: 200px;
-            height: auto;
-            margin: 10px 0;
-        }
-        .items-section {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 6px;
-        }
-        .items-section ul {
-            list-style: none;
-            padding: 0;
-        }
-        .items-section li {
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Gaia Digital Receipt System</h1>
-            <p>Manage and track your digital receipts efficiently</p>
-        </div>
+{% extends "base.html" %}
 
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('lookup')">Receipt Lookup</button>
-            <button class="tab" onclick="showTab('create')">Create Receipt</button>
-            <button class="tab" onclick="showTab('transactions')">Transaction Lookup</button>
-        </div>
+{% block styles %}
+    .hero {
+        margin-top: 0;
+        padding: 6rem 2rem;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.1));
+        color: var(--text-color);
+        text-align: center;
+        position: relative;
+        border-bottom: 1px solid #e5e7eb;
+    }
 
-        <!-- Receipt Lookup Tab -->
-        <div id="lookup" class="tab-content active">
-            <h2>Receipt Lookup</h2>
-            <div class="form-group">
-                <label for="receipt-id">Receipt ID:</label>
-                <input type="text" id="receipt-id" placeholder="Enter Receipt ID">
-                <button onclick="lookupReceipt()">Search Receipt</button>
+    .hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%2310b98120" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,208C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+        background-size: cover;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero h1 {
+        font-size: 3.5rem;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--text-color);
+    }
+
+    .hero p {
+        font-size: 1.25rem;
+        max-width: 600px;
+        margin: 0 auto 2.5rem;
+        opacity: 0.9;
+        color: #6b7280;
+    }
+
+    .cta-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-bottom: 3rem;
+    }
+
+    .cta-button {
+        display: inline-block;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .cta-primary {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+    }
+
+    .cta-primary:hover {
+        background: var(--secondary-color);
+        transform: translateY(-2px);
+    }
+
+    .cta-secondary {
+        background: transparent;
+        color: var(--primary-color);
+        border: 2px solid var(--primary-color);
+    }
+
+    .cta-secondary:hover {
+        background: rgba(16, 185, 129, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .cta-button:hover {
+        transform: translateY(-2px);
+    }
+
+    .features {
+        max-width: 1200px;
+        margin: 4rem auto;
+        padding: 0 2rem;
+    }
+
+    .section-title {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .section-title h2 {
+        font-size: 2.5rem;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+
+    .section-title p {
+        color: #6b7280;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 4rem;
+    }
+
+    .feature-card {
+        background: var(--card-background);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-icon {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        background: #f0fdf4;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
+
+    .feature-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: var(--text-color);
+    }
+
+    .feature-card p {
+        color: #6b7280;
+    }
+
+    .future-tech {
+        background: #f0fdf4;
+        padding: 4rem 2rem;
+        margin: 4rem 0;
+        text-align: center;
+    }
+
+    .future-tech h2 {
+        font-size: 2.5rem;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+
+    .future-tech p {
+        max-width: 600px;
+        margin: 0 auto 2rem;
+        color: #6b7280;
+    }
+
+    .tech-comparison {
+        display: flex;
+        max-width: 900px;
+        margin: 0 auto;
+        gap: 2rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .tech-card {
+        flex: 1;
+        min-width: 280px;
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .tech-card.current {
+        border: 2px solid var(--primary-color);
+    }
+
+    .tech-card.future {
+        border: 2px dashed var(--primary-color);
+    }
+
+    .tech-icon {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .tech-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: var(--text-color);
+    }
+
+    .tech-badge {
+        display: inline-block;
+        padding: 0.25rem 1rem;
+        border-radius: 999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .badge-current {
+        background: #ecfdf5;
+        color: var(--primary-color);
+    }
+
+    .badge-future {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    footer {
+        background: var(--text-color);
+        color: white;
+        padding: 4rem 2rem;
+    }
+
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+
+    .footer-section h4 {
+        margin-bottom: 1.5rem;
+        font-size: 1.2rem;
+        color: white;
+    }
+
+    .footer-section ul {
+        list-style: none;
+    }
+
+    .footer-section ul li {
+        margin-bottom: 0.75rem;
+    }
+
+    .footer-section a {
+        color: #e5e7eb;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .footer-section a:hover {
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .hero h1 {
+            font-size: 2.5rem;
+        }
+
+        .cta-buttons {
+            flex-direction: column;
+        }
+    }
+{% endblock %}
+
+{% block content %}
+    <section class="hero">
+        <div class="hero-content">
+            <h1>The Future of Digital Receipts</h1>
+            <p>Transform your business with contactless digital receipts. Our NFC technology is in final development, currently demonstrating with QR codes.</p>
+            <div class="cta-buttons">
+                <a href="/demo" class="cta-button cta-primary">Try the Demo</a>
+                <a href="/how-it-works" class="cta-button cta-secondary">See How It Works</a>
             </div>
-            <div id="receipt-result" class="result-container"></div>
-            <div id="qr-container" style="margin-top: 20px; text-align: center;">
-                <!-- QR code will be displayed here -->
+        </div>
+    </section>
+
+    <section class="future-tech" id="technology">
+        <h2>NFC Receipt Transfer</h2>
+        <p>Experience the next generation of digital receipts with our upcoming NFC technology</p>
+        <div class="tech-comparison">
+            <div class="tech-card current">
+                <div class="tech-icon">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <span class="tech-badge badge-current">Demo Version</span>
+                <h3>QR Code Demo</h3>
+                <p>Currently demonstrating the platform capabilities using QR technology while finalizing NFC implementation.</p>
+            </div>
+            <div class="tech-card future">
+                <div class="tech-icon">
+                    <i class="fas fa-wifi"></i>
+                </div>
+                <span class="tech-badge badge-future">Final Development</span>
+                <h3>NFC Tap Transfer</h3>
+                <p>In final stages of development: Simply tap your phone to receive your digital receipt instantly. Launch coming soon.</p>
             </div>
         </div>
+    </section>
 
-        <!-- Create Receipt Tab -->
-        <div id="create" class="tab-content">
-            <h2>Create New Receipt</h2>
-            <form id="receipt-form" onsubmit="createReceipt(event)">
-                <div class="form-group">
-                    <label for="store">Store Name:</label>
-                    <input type="text" id="store" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="date">Date:</label>
-                    <input type="date" id="date" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Items:</label>
-                    <div id="items-container" class="items-container">
-                        <div class="item">
-                            <input type="text" placeholder="Item name" required>
-                            <input type="number" step="0.01" placeholder="Price" required>
-                            <button type="button" class="remove-item" onclick="removeItem(this)">×</button>
-                        </div>
-                    </div>
-                    <button type="button" onclick="addItem()">Add Item</button>
-                </div>
-                
-                <div class="form-group">
-                    <label>Payment Method:</label>
-                    <select id="payment-method" required>
-                        <option value="">Select Payment Method</option>
-                        <option value="credit">Credit Card</option>
-                        <option value="debit">Debit Card</option>
-                        <option value="cash">Cash</option>
-                    </select>
-                </div>
-                
-                <button type="submit">Create Receipt</button>
-            </form>
-            <div id="create-result" class="result-container"></div>
+    <section class="features" id="features">
+        <div class="section-title">
+            <h2>Smart Features</h2>
+            <p>Everything you need for modern receipt management</p>
         </div>
-
-        <!-- Transaction Lookup Tab -->
-        <div id="transactions" class="tab-content">
-            <h2>Transaction Lookup</h2>
-            <div class="form-group">
-                <label for="transaction-id">Transaction ID:</label>
-                <input type="text" id="transaction-id" placeholder="Enter Transaction ID">
-                <button onclick="lookupTransaction()">Search Transaction</button>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h3>Contactless Transfer</h3>
+                <p>Share receipts instantly via QR codes today, with NFC technology coming soon.</p>
             </div>
-            <div id="transaction-result" class="result-container"></div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-cloud"></i>
+                </div>
+                <h3>Cloud Storage</h3>
+                <p>Securely store all your receipts in the cloud, accessible anytime, anywhere.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Business Analytics</h3>
+                <p>Track receipt usage and gain insights into your business operations.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Secure & Private</h3>
+                <p>Enterprise-grade security ensures your receipt data is always protected.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-sync"></i>
+                </div>
+                <h3>Real-time Access</h3>
+                <p>Instant receipt generation and sharing across all devices.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <h3>Eco-friendly</h3>
+                <p>Reduce paper waste and contribute to environmental sustainability.</p>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <script>
-        // Tab Functionality
-        function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
-        }
-
-        // Receipt Lookup
-        async function lookupReceipt() {
-            const receiptId = document.getElementById('receipt-id').value;
-            const resultContainer = document.getElementById('receipt-result');
-            const qrContainer = document.getElementById('qr-container');
-            
-            try {
-                const response = await fetch(`/receipt/${receiptId}`);
-                
-                if (response.ok) {
-                    // Display QR Code immediately since we know the receipt exists
-                    qrContainer.style.display = 'block';
-                    qrContainer.innerHTML = `
-                        <div class="qr-section">
-                            <h3>QR Code</h3>
-                            <img src="/receipt_qr_${receiptId}.png" alt="Receipt QR Code">
-                            <p>Scan this code to view the receipt on your mobile device</p>
-                        </div>
-                    `;
-
-                    // Get receipt details
-                    const detailsResponse = await fetch(`/api/receipt/${receiptId}`);
-                    const receiptData = await detailsResponse.json();
-                    
-                    // Get transaction details
-                    const transactionResponse = await fetch(`/api/receipt/${receiptId}/transaction`);
-                    const transactionData = await transactionResponse.json();
-                    
-                    resultContainer.style.display = 'block';
-                    resultContainer.innerHTML = `
-                        <div class="receipt-summary">
-                            <h3>Receipt Details</h3>
-                            <p><strong>Store:</strong> ${receiptData.store}</p>
-                            <p><strong>Date:</strong> ${new Date(receiptData.timestamp).toLocaleString()}</p>
-                            <p><strong>Total:</strong> $${receiptData.total.toFixed(2)}</p>
-                            
-                            <div class="items-section">
-                                <h4>Items:</h4>
-                                <ul>
-                                    ${receiptData.items.map(item => `
-                                        <li>${item.name}: $${item.price.toFixed(2)}</li>
-                                    `).join('')}
-                                </ul>
-                            </div>
-
-                            <div class="transaction-section">
-                                <h4>Transaction Details:</h4>
-                                <p><strong>Transaction ID:</strong> ${transactionData.transaction_id}</p>
-                                <p><strong>Payment Method:</strong> ${transactionData.payment_method}</p>
-                            </div>
-
-                            <div class="device-section">
-                                <h4>Device History:</h4>
-                                <ul>
-                                    ${receiptData.scans ? receiptData.scans.map(scan => `
-                                        <li>Device ID: ${scan.device_uid}<br>
-                                            Scanned: ${new Date(scan.timestamp).toLocaleString()}</li>
-                                    `).join('') : 'No scans recorded'}
-                                </ul>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    resultContainer.innerHTML = `<p class="error">Receipt not found</p>`;
-                    qrContainer.style.display = 'none';
-                    qrContainer.innerHTML = '';
-                }
-            } catch (error) {
-                resultContainer.innerHTML = `<p class="error">Error: ${error.message}</p>`;
-                qrContainer.style.display = 'none';
-                qrContainer.innerHTML = '';
-            }
-        }
-
-        // Create Receipt
-        function addItem() {
-            const container = document.getElementById('items-container');
-            const newItem = document.createElement('div');
-            newItem.className = 'item';
-            newItem.innerHTML = `
-                <input type="text" placeholder="Item name" required>
-                <input type="number" step="0.01" placeholder="Price" required>
-                <button type="button" class="remove-item" onclick="removeItem(this)">×</button>
-            `;
-            container.appendChild(newItem);
-        }
-
-        function removeItem(button) {
-            const container = document.getElementById('items-container');
-            if (container.children.length > 1) {
-                button.parentElement.remove();
-            }
-        }
-
-        async function createReceipt(event) {
-            event.preventDefault();
-            const resultContainer = document.getElementById('create-result');
-            
-            const items = Array.from(document.querySelectorAll('.item')).map(item => ({
-                name: item.children[0].value,
-                price: parseFloat(item.children[1].value)
-            }));
-
-            const receiptData = {
-                store: document.getElementById('store').value,
-                date: document.getElementById('date').value,
-                items: items,
-                total: items.reduce((sum, item) => sum + item.price, 0),
-                payment: {
-                    payment_method: document.getElementById('payment-method').value
-                }
-            };
-
-            try {
-                const response = await fetch('/receipt', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(receiptData)
-                });
-
-                const data = await response.json();
-                
-                if (response.ok) {
-                    resultContainer.style.display = 'block';
-                    resultContainer.innerHTML = `
-                        <h3>Receipt Created Successfully!</h3>
-                        <p><strong>Receipt ID:</strong> ${data.receipt_id}</p>
-                        <p><strong>Transaction ID:</strong> ${data.transaction_id}</p>
-                        <img src="/receipt_qr_${data.receipt_id}.png" alt="Receipt QR Code">
-                    `;
-                    document.getElementById('receipt-form').reset();
-                } else {
-                    resultContainer.innerHTML = `<p class="error">Error: ${data.error}</p>`;
-                }
-            } catch (error) {
-                resultContainer.innerHTML = `<p class="error">Error: ${error.message}</p>`;
-            }
-        }
-
-        // Transaction Lookup
-        async function lookupTransaction() {
-            const transactionId = document.getElementById('transaction-id').value;
-            const resultContainer = document.getElementById('transaction-result');
-            
-            try {
-                const response = await fetch(`/api/transaction/${transactionId}`);
-                const data = await response.json();
-                
-                if (response.ok) {
-                    resultContainer.style.display = 'block';
-                    resultContainer.innerHTML = `
-                        <div class="transaction-summary">
-                            <h3>Transaction Details</h3>
-                            <p><strong>Transaction ID:</strong> ${data.transaction_id}</p>
-                            <p><strong>Date:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
-                            <p><strong>Payment Method:</strong> ${data.payment_method}</p>
-                            
-                            <div class="receipt-section">
-                                <h4>Receipt Details:</h4>
-                                <p><strong>Store:</strong> ${data.receipt.store}</p>
-                                <p><strong>Total:</strong> $${data.receipt.total.toFixed(2)}</p>
-                                <p><strong>Receipt ID:</strong> ${data.receipt_id}</p>
-                            </div>
-
-                            <div class="device-section">
-                                <h4>Device History:</h4>
-                                <ul>
-                                    ${data.receipt.scans ? data.receipt.scans.map(scan => `
-                                        <li>Device ID: ${scan.device_uid}<br>
-                                            Scanned: ${new Date(scan.timestamp).toLocaleString()}</li>
-                                    `).join('') : 'No scans recorded'}
-                                </ul>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    resultContainer.innerHTML = `<p class="error">Error: ${data.error}</p>`;
-                }
-            } catch (error) {
-                resultContainer.innerHTML = `<p class="error">Error: ${error.message}</p>`;
-            }
-        }
-
-        // Set today's date as default
-        document.getElementById('date').valueAsDate = new Date();
-    </script>
-</body>
-</html> 
+    <footer id="contact">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>About Gaia</h4>
+                <p>Modern digital receipt management platform for forward-thinking businesses.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/create">Create Receipt</a></li>
+                    <li><a href="/business/transactions">Dashboard</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <ul>
+                    <li><i class="fas fa-envelope"></i> support@gaia-receipts.com</li>
+                    <li><i class="fas fa-phone"></i> (555) 123-4567</li>
+                    <li><i class="fas fa-map-marker-alt"></i> San Francisco, CA</li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Follow Us</h4>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+{% endblock %} 

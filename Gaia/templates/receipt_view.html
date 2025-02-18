@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Receipt - {{ receipt.store }}{% endblock %}
+
+{% block styles %}
+    .receipt-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: var(--card-background);
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .receipt-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .store-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .receipt-date {
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+
+    .items-list {
+        margin: 2rem 0;
+        border-top: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1rem 0;
+    }
+
+    .item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+    }
+
+    .item-name {
+        color: var(--text-color);
+    }
+
+    .item-price {
+        font-weight: 500;
+    }
+
+    .receipt-total {
+        text-align: right;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-top: 1rem;
+    }
+
+    .receipt-footer {
+        margin-top: 2rem;
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+{% endblock %}
+
+{% block content %}
+    <div class="receipt-container">
+        <div class="receipt-header">
+            <div class="store-name">{{ receipt.store }}</div>
+            <div class="receipt-date">{{ receipt.timestamp }}</div>
+        </div>
+
+        <div class="items-list">
+            {% for item in receipt.items %}
+            <div class="item">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-price">${{ "%.2f"|format(item.price) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="receipt-total">
+            Total: ${{ "%.2f"|format(receipt.total) }}
+        </div>
+
+        <div class="receipt-footer">
+            <p>Digital receipt provided by Gaia</p>
+            <p>Receipt ID: {{ receipt.receipt_id }}</p>
+        </div>
+    </div>
+{% endblock %} 
