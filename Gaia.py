@@ -85,19 +85,19 @@ class ReceiptManager:
         try:
             logger.debug(f"Starting QR generation for receipt {receipt_id}...")
             
-            # For local development, use local IP address so phones on the same network can access
+            # Use Render URL in production, local for development
             if not base_url:
-                # Get local IP address that's accessible on the network
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                try:
-                    # Doesn't need to be reachable
-                    s.connect(('10.255.255.255', 1))
-                    local_ip = s.getsockname()[0]
-                except Exception:
-                    local_ip = '127.0.0.1'
-                finally:
-                    s.close()
-                base_url = f"http://{local_ip}:8080"
+                if os.getenv('RENDER'):  # Check if we're on Render
+                    base_url = "https://gaia-eum3.onrender.com"
+                else:
+                    # For local development, use local IP
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    try:
+                        s.connect(('10.255.255.255', 1))
+                        local_ip = s.getsockname()[0]
+                    finally:
+                        s.close()
+                    base_url = f"http://{local_ip}:8080"
                 logger.debug(f"Using local IP for development: {base_url}")
             
             # Generate a validation token
