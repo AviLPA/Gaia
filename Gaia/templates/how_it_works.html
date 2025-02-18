@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+
+{% block title %}How It Works - Gaia{% endblock %}
+
+{% block styles %}
+    .how-it-works-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 2rem;
+    }
+
+    .intro-section {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .intro-section h1 {
+        color: var(--text-color);
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .intro-section p {
+        color: #6b7280;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .process-flow {
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+        margin: 4rem 0;
+    }
+
+    .process-step {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        align-items: center;
+    }
+
+    .process-step:nth-child(even) {
+        direction: rtl;
+    }
+
+    .process-step:nth-child(even) .step-content {
+        direction: ltr;
+    }
+
+    .step-content {
+        padding: 2rem;
+    }
+
+    .step-number {
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+
+    .step-title {
+        font-size: 1.8rem;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+
+    .step-description {
+        color: #6b7280;
+        line-height: 1.7;
+    }
+
+    .step-image {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .step-image img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .benefits-section {
+        background: #f0fdf4;
+        padding: 4rem 2rem;
+        margin: 4rem -2rem;
+        text-align: center;
+    }
+
+    .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
+    }
+
+    .benefit-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .benefit-icon {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .cta-section {
+        text-align: center;
+        margin: 4rem 0;
+    }
+
+    .cta-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .process-step {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .process-step:nth-child(even) {
+            direction: ltr;
+        }
+    }
+
+    .tech-demo-section {
+        background: #f0fdf4;
+        padding: 4rem 2rem;
+        margin: 4rem -2rem;
+    }
+
+    .tech-explanation {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .tech-step {
+        margin-bottom: 3rem;
+    }
+
+    .tech-step h3 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .tech-step p {
+        color: #6b7280;
+        line-height: 1.7;
+    }
+
+    .tech-diagram {
+        text-align: center;
+        margin: 2rem 0;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 8px;
+    }
+
+    .code-snippet {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+    }
+
+    .demo-integration {
+        margin: 2rem 0;
+        padding: 2rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .demo-flow, .processing-steps, .nfc-demo, .access-flow {
+        /* Add specific styling for each demonstration component */
+    }
+
+    .transfer-waves {
+        /* Add NFC transfer animation */
+    }
+
+    .market-stats {
+        /* Add market statistics styling */
+    }
+
+    .demo-progress {
+        position: sticky;
+        top: 80px;
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        z-index: 100;
+    }
+
+    .progress-steps {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .progress-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 25%;
+        position: relative;
+    }
+
+    .progress-step::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        background: #e5e7eb;
+        top: 15px;
+        left: 50%;
+        z-index: -1;
+    }
+
+    .progress-step:last-child::after {
+        display: none;
+    }
+
+    .step-indicator {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .progress-step.active .step-indicator {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .step-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        text-align: center;
+    }
+
+    .progress-step.active .step-label {
+        color: var(--primary-color);
+        font-weight: 500;
+    }
+
+    .market-section {
+        background: white;
+        padding: 4rem 2rem;
+        border-radius: 12px;
+        margin: 4rem auto;
+        max-width: 1000px;
+    }
+
+    .market-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .stat-card {
+        background: #f8fafc;
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+
+    .business-value {
+        margin-top: 3rem;
+        text-align: left;
+    }
+
+    .value-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .value-item {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .value-item h4 {
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .value-item p {
+        color: #6b7280;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+{% endblock %}
+
+{% block content %}
+    <div class="how-it-works-container">
+        <div class="intro-section">
+            <h1>How Gaia Digital Receipts Work</h1>
+            <p>A privacy-first approach to digital receipts using NFC technology and secure data management</p>
+        </div>
+
+        <div class="tech-demo-section">
+            <div class="tech-explanation">
+                <div class="tech-step">
+                    <h3>1. POS Integration & Data Interception</h3>
+                    <p>Gaia acts as middleware that integrates with existing POS systems:</p>
+                    <div class="tech-diagram">
+                        <div class="demo-flow">
+                            <div class="flow-step">
+                                <i class="fas fa-cash-register"></i>
+                                <span>POS Transaction</span>
+                            </div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-step active">
+                                <i class="fas fa-random"></i>
+                                <span>Data Interception</span>
+                            </div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-step">
+                                <i class="fas fa-database"></i>
+                                <span>Gaia Processing</span>
+                            </div>
+                        </div>
+                        <p class="tech-note">Intercepting receipt printer data stream through standard protocols (USB/Ethernet)</p>
+                    </div>
+                </div>
+
+                <div class="tech-step">
+                    <h3>2. Secure Data Processing</h3>
+                    <p>Transaction data is processed and stored securely:</p>
+                    <div class="tech-diagram">
+                        <div class="processing-steps">
+                            <div class="process-item">
+                                <div class="process-icon"><i class="fas fa-shield-alt"></i></div>
+                                <div class="process-desc">
+                                    <h4>Data Encryption</h4>
+                                    <p>Receipt data encrypted using enterprise-grade security</p>
+                                </div>
+                            </div>
+                            <div class="process-item">
+                                <div class="process-icon"><i class="fas fa-key"></i></div>
+                                <div class="process-desc">
+                                    <h4>UID Generation</h4>
+                                    <p>Unique identifier created for NFC transfer</p>
+                                </div>
+                            </div>
+                            <div class="process-item">
+                                <div class="process-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                <div class="process-desc">
+                                    <h4>Cloud Storage</h4>
+                                    <p>Secure storage in Firebase Firestore</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-step">
+                    <h3>3. NFC Transfer</h3>
+                    <p>Lightweight, secure data transfer using NFC technology:</p>
+                    <div class="tech-diagram">
+                        <div class="nfc-demo">
+                            <div class="device terminal">
+                                <div class="screen">
+                                    <div class="uid-display">UID: R-123ABC</div>
+                                    <div class="nfc-indicator active">
+                                        <i class="fas fa-wifi"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="transfer-animation">
+                                <div class="transfer-waves"></div>
+                            </div>
+                            <div class="device phone">
+                                <div class="screen">
+                                    <div class="receipt-preview">
+                                        <div class="loading">Retrieving receipt...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="tech-note">NFC chip stores only the encrypted UID, not the full receipt data</p>
+                    </div>
+                </div>
+
+                <div class="tech-step">
+                    <h3>4. Privacy-First Access</h3>
+                    <p>Secure receipt retrieval and storage:</p>
+                    <div class="tech-diagram">
+                        <div class="access-flow">
+                            <div class="flow-item">
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>Customer Device</span>
+                            </div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-item">
+                                <i class="fas fa-lock"></i>
+                                <span>Secure Authentication</span>
+                            </div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-item">
+                                <i class="fas fa-receipt"></i>
+                                <span>Receipt Access</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-progress">
+            <div class="progress-steps">
+                <div class="progress-step active" id="step1">
+                    <div class="step-indicator">1</div>
+                    <div class="step-label">POS Integration</div>
+                </div>
+                <div class="progress-step" id="step2">
+                    <div class="step-indicator">2</div>
+                    <div class="step-label">Data Processing</div>
+                </div>
+                <div class="progress-step" id="step3">
+                    <div class="step-indicator">3</div>
+                    <div class="step-label">NFC Transfer</div>
+                </div>
+                <div class="progress-step" id="step4">
+                    <div class="step-indicator">4</div>
+                    <div class="step-label">Receipt Access</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="market-section">
+            <h2>Market Opportunity & Business Value</h2>
+            <div class="market-stats">
+                <div class="stat-card">
+                    <div class="stat-value">$30.55B</div>
+                    <div class="stat-label">NFC Market by 2029</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">B2B SaaS</div>
+                    <div class="stat-label">Revenue Model</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">85%</div>
+                    <div class="stat-label">Paper Reduction</div>
+                </div>
+            </div>
+
+            <div class="business-value">
+                <h3>Value Proposition</h3>
+                <div class="value-grid">
+                    <div class="value-item">
+                        <h4><i class="fas fa-cash-register"></i> For POS Providers</h4>
+                        <p>Enhanced product offering with modern digital receipt capability, increasing competitive advantage and market share.</p>
+                    </div>
+                    <div class="value-item">
+                        <h4><i class="fas fa-store"></i> For Businesses</h4>
+                        <p>Reduced operational costs, improved customer experience, and environmental sustainability credentials.</p>
+                    </div>
+                    <div class="value-item">
+                        <h4><i class="fas fa-user"></i> For Customers</h4>
+                        <p>Convenient digital receipt storage, easy access for returns, and contribution to environmental sustainability.</p>
+                    </div>
+                    <div class="value-item">
+                        <h4><i class="fas fa-chart-line"></i> Growth Potential</h4>
+                        <p>Expanding NFC market, increasing demand for digital solutions, and growing environmental awareness.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>Experience the Future of Digital Receipts</h2>
+            <p>See how Gaia can transform your business</p>
+            <div class="cta-buttons">
+                <a href="/demo" class="cta-button cta-primary">Try the Demo</a>
+                <a href="/create" class="cta-button cta-secondary">Create Receipt</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Demo timing and progress tracking
+    function updateProgress(step) {
+        document.querySelectorAll('.progress-step').forEach(el => el.classList.remove('active'));
+        document.querySelector(`#step${step}`).classList.add('active');
+    }
+
+    // Intersection Observer to track which section is in view
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const step = entry.target.getAttribute('data-step');
+                updateProgress(step);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    // Observe each tech step
+    document.querySelectorAll('.tech-step').forEach((el, index) => {
+        el.setAttribute('data-step', index + 1);
+        observer.observe(el);
+    });
+</script>
+{% endblock %} 
