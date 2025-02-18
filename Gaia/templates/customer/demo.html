@@ -1,0 +1,673 @@
+{% extends "base.html" %}
+
+{% block title %}Demo - Gaia{% endblock %}
+
+{% block styles %}
+    .demo-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        text-align: center;
+    }
+
+    .demo-header {
+        margin-bottom: 3rem;
+    }
+
+    .demo-header h1 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .demo-steps {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        flex-wrap: wrap;
+    }
+
+    .step-card {
+        flex: 1;
+        min-width: 250px;
+        max-width: 300px;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-weight: 600;
+    }
+
+    .phones-container {
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        margin: 2rem auto;
+        perspective: 1000px;
+    }
+
+    .demo-phone {
+        position: relative;
+        width: 300px;
+        height: 600px;
+        border: 12px solid #333;
+        border-radius: 36px;
+        background: white;
+        padding: 1rem;
+        overflow: hidden;
+    }
+
+    .demo-phone.terminal {
+        transform: rotate3d(0, 1, 0, -5deg);
+    }
+
+    .demo-phone.user {
+        transform: rotate3d(0, 1, 0, 5deg);
+    }
+
+    .phone-label {
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+
+    .phone-screen {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        background: #f9fafb;
+    }
+
+    .transaction-screen {
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .transaction-amount {
+        font-size: 2.5rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 2rem 0;
+    }
+
+    .processing-indicator {
+        display: none;
+        margin: 2rem 0;
+    }
+
+    .processing-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary-color);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    .tap-prompt {
+        display: none;
+        padding: 2rem;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 12px;
+        margin: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .nfc-rings {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .nfc-ring {
+        position: absolute;
+        border: 2px solid white;
+        border-radius: 50%;
+        opacity: 0;
+        animation: nfcRing 2s infinite;
+    }
+
+    .nfc-ring:nth-child(1) { width: 20px; height: 20px; animation-delay: 0s; }
+    .nfc-ring:nth-child(2) { width: 40px; height: 40px; animation-delay: 0.5s; }
+    .nfc-ring:nth-child(3) { width: 60px; height: 60px; animation-delay: 1s; }
+
+    @keyframes nfcRing {
+        0% {
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0.8;
+        }
+        100% {
+            transform: translate(-50%, -50%) scale(2);
+            opacity: 0;
+        }
+    }
+
+    .tap-prompt:hover {
+        transform: scale(1.02);
+        background: var(--secondary-color);
+    }
+
+    .tap-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .transfer-status {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+        color: var(--success-color);
+    }
+
+    .status-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .receipt-preview {
+        display: none;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 12px;
+        margin: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .receipt-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+
+    .receipt-logo {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 1rem;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .receipt-store {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .receipt-address {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+
+    .receipt-datetime {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .receipt-items {
+        margin: 1.5rem 0;
+        border-bottom: 1px dashed #e5e7eb;
+        padding-bottom: 1rem;
+    }
+
+    .receipt-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .item-details {
+        flex: 1;
+    }
+
+    .item-name {
+        color: var(--text-color);
+    }
+
+    .item-price {
+        color: var(--text-color);
+        font-weight: 500;
+        text-align: right;
+        min-width: 80px;
+    }
+
+    .receipt-summary {
+        margin: 1rem 0;
+        padding-bottom: 1rem;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .total-row {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .receipt-footer {
+        text-align: center;
+        margin-top: 1.5rem;
+    }
+
+    .receipt-qr {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 1rem;
+        padding: 0.5rem;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+    }
+
+    .receipt-qr img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .receipt-id {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+
+    .receipt-message {
+        font-size: 0.875rem;
+        color: var(--primary-color);
+    }
+
+    .terminal-success {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--success-color);
+    }
+
+    .terminal-success i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .demo-controls {
+        margin-top: 2rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .demo-button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        background: var(--primary-color);
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .demo-button:hover {
+        background: var(--secondary-color);
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .user-screen {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        background: #f9fafb;
+    }
+
+    .user-prompt {
+        display: none;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .user-prompt h3 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .waiting-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        color: var(--text-color);
+    }
+
+    .waiting-icon {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+{% endblock %}
+
+{% block content %}
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>Experience Digital Receipts</h1>
+            <p>Preview our NFC-powered digital receipt technology. Simply tap your phone to receive your digital receipt instantly.</p>
+        </div>
+
+        <div class="demo-steps">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h3>Transaction Complete</h3>
+                <p>Payment is processed through the POS system</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h3>NFC Transfer</h3>
+                <p>Tap your phone to instantly receive your digital receipt</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h3>Receipt Access</h3>
+                <p>View your secure digital receipt immediately</p>
+            </div>
+        </div>
+
+        <div class="phones-container">
+            <div class="phone-section">
+                <div class="phone-label">Payment Terminal</div>
+                <div class="demo-phone terminal">
+                    <div class="phone-screen">
+                        <div id="transactionScreen" class="transaction-screen">
+                            <h3>Transaction Complete</h3>
+                            <div class="transaction-amount">$21.53</div>
+                            <p>Ready for receipt transfer</p>
+                        </div>
+                        
+                        <div id="processingIndicator" class="processing-indicator">
+                            <div class="processing-spinner"></div>
+                            <p>Processing transaction...</p>
+                        </div>
+
+                        <div id="tapPrompt" class="tap-prompt">
+                            <div class="nfc-rings">
+                                <div class="nfc-ring"></div>
+                                <div class="nfc-ring"></div>
+                                <div class="nfc-ring"></div>
+                            </div>
+                            <div class="tap-icon">
+                                <i class="fas fa-wifi"></i>
+                            </div>
+                            <p>Tap phone to receive receipt</p>
+                        </div>
+
+                        <div id="transferStatus" class="transfer-status">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Receipt Transferred</p>
+                        </div>
+
+                        <div id="receiptPreview" class="receipt-preview">
+                            <div class="terminal-success">
+                                <i class="fas fa-check-circle"></i>
+                                <p>Receipt Transferred</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phone-section">
+                <div class="phone-label">Customer Phone</div>
+                <div class="demo-phone user">
+                    <div class="phone-screen">
+                        <div id="userWaitingScreen" class="waiting-screen">
+                            <div class="waiting-icon">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <h3>NFC Receipt Demo</h3>
+                            <p>Ready to receive digital receipt</p>
+                        </div>
+
+                        <div id="userNfcPrompt" class="tap-prompt">
+                            <div class="nfc-rings">
+                                <div class="nfc-ring"></div>
+                                <div class="nfc-ring"></div>
+                                <div class="nfc-ring"></div>
+                            </div>
+                            <div class="tap-icon">
+                                <i class="fas fa-wifi"></i>
+                            </div>
+                            <p>Tap to receive receipt</p>
+                        </div>
+
+                        <div id="userTransferStatus" class="transfer-status">
+                            <i class="fas fa-sync fa-spin"></i>
+                            <p>Receiving receipt...</p>
+                        </div>
+
+                        <div id="userReceiptPreview" class="receipt-preview">
+                            <!-- Receipt content will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-controls">
+            <button onclick="startDemo()" class="restart-button">
+                <i class="fas fa-redo"></i> Restart Demo
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function startDemo() {
+        // Terminal elements
+        const transactionScreen = document.getElementById('transactionScreen');
+        const processingIndicator = document.getElementById('processingIndicator');
+        const tapPrompt = document.getElementById('tapPrompt');
+        const transferStatus = document.getElementById('transferStatus');
+        const receiptPreview = document.getElementById('receiptPreview');
+
+        // User phone elements
+        const userWaitingScreen = document.getElementById('userWaitingScreen');
+        const userNfcPrompt = document.getElementById('userNfcPrompt');
+        const userTransferStatus = document.getElementById('userTransferStatus');
+        const userReceiptPreview = document.getElementById('userReceiptPreview');
+
+        // Reset all screens
+        resetDemo();
+
+        // Show processing payment on terminal
+        setTimeout(() => {
+            transactionScreen.style.display = 'none';
+            processingIndicator.style.display = 'block';
+            processingIndicator.classList.add('fade-in');
+        }, 1000);
+
+        // Show NFC prompts on both devices
+        setTimeout(() => {
+            processingIndicator.style.display = 'none';
+            tapPrompt.style.display = 'block';
+            tapPrompt.classList.add('fade-in');
+
+            userWaitingScreen.style.display = 'none';
+            userNfcPrompt.style.display = 'block';
+            userNfcPrompt.classList.add('fade-in');
+            
+            // Start transfer after 2 seconds
+            setTimeout(() => {
+                tapPrompt.style.display = 'none';
+                userNfcPrompt.style.display = 'none';
+                
+                transferStatus.style.display = 'block';
+                userTransferStatus.style.display = 'block';
+                transferStatus.classList.add('fade-in');
+                userTransferStatus.classList.add('fade-in');
+
+                // Show receipts after transfer
+                setTimeout(() => {
+                    transferStatus.style.display = 'none';
+                    userTransferStatus.style.display = 'none';
+
+                    // Terminal just shows checkmark
+                    receiptPreview.innerHTML = `
+                        <div class="terminal-success">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Receipt Transferred</p>
+                        </div>
+                    `;
+
+                    // User phone shows detailed receipt
+                    userReceiptPreview.innerHTML = `
+                        <div class="receipt-header">
+                            <div class="receipt-logo">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <div class="receipt-store">Demo Store</div>
+                            <div class="receipt-address">123 Main Street, City, State 12345</div>
+                            <div class="receipt-datetime">
+                                ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
+                            </div>
+                        </div>
+
+                        <div class="receipt-items">
+                            <div class="receipt-item">
+                                <div class="item-details">
+                                    <div class="item-name">Coffee - Large</div>
+                                    <div class="item-meta">Hot • Extra Shot</div>
+                                </div>
+                                <div class="item-price">$4.99</div>
+                            </div>
+                            <div class="receipt-item">
+                                <div class="item-details">
+                                    <div class="item-name">Turkey Club Sandwich</div>
+                                    <div class="item-meta">No Mayo • Toasted</div>
+                                </div>
+                                <div class="item-price">$8.99</div>
+                            </div>
+                            <div class="receipt-item">
+                                <div class="item-details">
+                                    <div class="item-name">Chocolate Chip Cookie</div>
+                                    <div class="item-meta">Warmed</div>
+                                </div>
+                                <div class="item-price">$2.99</div>
+                            </div>
+                        </div>
+
+                        <div class="receipt-summary">
+                            <div class="summary-row">
+                                <span>Subtotal</span>
+                                <span>$16.97</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Tax (8.875%)</span>
+                                <span>$1.51</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Tip (18%)</span>
+                                <span>$3.05</span>
+                            </div>
+                            <div class="summary-row total-row">
+                                <span>Total</span>
+                                <span>$21.53</span>
+                            </div>
+                        </div>
+
+                        <div class="receipt-footer">
+                            <div class="receipt-qr">
+                                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" alt="Receipt QR Code">
+                            </div>
+                            <div class="receipt-id">Receipt ID: R-${Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
+                            <div class="receipt-message">Thank you for using Gaia Digital Receipts!</div>
+                        </div>
+                    `;
+                    
+                    receiptPreview.style.display = 'block';
+                    userReceiptPreview.style.display = 'block';
+                    receiptPreview.classList.add('fade-in');
+                    userReceiptPreview.classList.add('fade-in');
+                }, 3000);
+            }, 2000);
+        }, 3000);
+    }
+
+    function resetDemo() {
+        const screens = {
+            terminal: [
+                'transactionScreen',
+                'processingIndicator',
+                'tapPrompt',
+                'transferStatus',
+                'receiptPreview'
+            ],
+            user: [
+                'userWaitingScreen',
+                'userNfcPrompt',
+                'userTransferStatus',
+                'userReceiptPreview'
+            ]
+        };
+
+        screens.terminal.forEach(id => {
+            const element = document.getElementById(id);
+            element.style.display = id === 'transactionScreen' ? 'block' : 'none';
+            element.classList.remove('fade-in');
+        });
+
+        screens.user.forEach(id => {
+            const element = document.getElementById(id);
+            element.style.display = id === 'userWaitingScreen' ? 'block' : 'none';
+            element.classList.remove('fade-in');
+        });
+    }
+</script>
+{% endblock %} 
